@@ -35,6 +35,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
+      - name: Debug Secrets
+        run: |
+          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
+          echo "DOCKER_PASSWORD is set but hidden"
+
+
       - name: Log in to Docker Hub
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
