@@ -20,10 +20,11 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest  # ✅ Ensure pytest is installed
       - name: Run Tests
         run: |
-          pip install pytest
           pytest tests/  # Ensure you have test cases inside a 'tests/' folder
       
   docker-build-and-push:
