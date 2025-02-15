@@ -1,75 +1,72 @@
 name: CI/CD Pipeline for FastAPI
 
-on:
+on: 
   push:
     branches:
-      - main  # Triggers workflow on push to 'main' branch
+      - main
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      # ✅ Add Git Safe Directory Fix Here
+      - name: Fix Git safe directory warning
+        run: git config --global --add safe.directory '*'
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
-          python-version: "3.9"
+          python-version: '3.9'
 
       - name: Install Dependencies
         run: |
-          pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest  # Ensure pytest is installed
 
       - name: Run Tests
-        run: pytest tests/ || echo "No tests found, skipping..."
+        run: pytest tests/
   
   docker-build-and-push:
     runs-on: ubuntu-latest
     needs: build-and-test
-
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Debug Secrets
-        run: |
-          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
-          echo "DOCKER_PASSWORD is set but hidden"
-
+      # ✅ Add Git Safe Directory Fix Here (Just in case)
+      - name: Fix Git safe directory warning
+        run: git config --global --add safe.directory '*'
 
       - name: Log in to Docker Hub
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/fastapi-app .
+        run: docker build -t fastapi-app .
 
       - name: Push Docker Image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/fastapi-app
+        run: docker push fastapi-app
 
   deploy:
-    needs: docker-build-and-push
     runs-on: ubuntu-latest
-
+    needs: docker-build-and-push
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Deploy to Server via SSH (Password Authentication)
+      # ✅ Add Git Safe Directory Fix Here
+      - name: Fix Git safe directory warning
+        run: git config --global --add safe.directory '*'
+
+      - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/fastapi-app
+            docker pull fastapi-app
             docker stop fastapi-container || true
             docker rm fastapi-container || true
-            docker run -d -p 8000:8000 --name fastapi-container ${{ secrets.DOCKER_USERNAME }}/fastapi-app
+            docker run -d -p 8000:8000 --name fastapi-container fastapi-app
